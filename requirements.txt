@@ -4,3 +4,4 @@ Pillow<10
 django-admin-thumbnails<0.3
 django-rest-framework-docs<0.2
 drf-yasg<2
+django-cors-headers==4.6
