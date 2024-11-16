@@ -31,8 +31,8 @@ class PostTest(TestCase):
     def test_get_post_list(self):
         response = self.client.get('/posts/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIsInstance(response.data, list)
-        self.assertGreater(len(response.data), 0)
+        self.assertIsInstance(response.data["results"], list)
+        self.assertGreater(len(response.data["results"]), 0)
 
     def test_get_single_post(self):
         response = self.client.get(f"/posts/{self.post.id}/")
