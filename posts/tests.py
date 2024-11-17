@@ -5,7 +5,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
-from posts.models import Post
+from posts.models import Post, Comment
+
 
 # image = SimpleUploadedFile(name='test_image.jpg', content=open("media/default.png", 'rb').read(), content_type='image/jpeg')
 
@@ -32,7 +33,7 @@ class PostTest(TestCase):
         response = self.client.get('/posts/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsInstance(response.data["results"], list)
-        self.assertGreater(len(response.data["results"]), 0)
+        self.assertGreater(response.data["count"], 0)
 
     def test_get_single_post(self):
         response = self.client.get(f"/posts/{self.post.id}/")
@@ -131,3 +132,60 @@ class LikeTest(TestCase):
     def test_like_without_authorization(self):
         response = self.client.post(f"/like/{self.post.id}/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class CommentsTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username = "test_user1",
+            email = "test@test.com",
+            password = "testpassword!"
+        )
+        self.token = Token.objects.create(user=self.user)
+        self.post = Post.objects.create(
+            author = self.user,
+            profile = self.user.profile,
+            title = "test_title",
+            body = "this is body",
+            category = "backend",
+        )
+        self.comment = Comment.objects.create(
+            author = self.user,
+            profile = self.user.profile,
+            post = self.post,
+            text = "test_comment",
+        )
+
+    def test_get_comments_list(self):
+        response = self.client.get("/comments/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(response.data['results'],list)
+        self.assertGreater(response.data['count'],0)
+
+    def test_create_comment(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
+        response = self.client.post(
+            "/comments/",
+            {"post":self.post.id, "text":"new_comment"},
+            format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_get_single_comment(self):
+        response = self.client.get(f"/comments/{self.comment.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["text"],self.comment.text)
+
+    def test_get_invalid_single_comment(self):
+        response = self.client.get("/comments/999/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_comment(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
+        response = self.client.put(f"/comments/{self.comment.id}/",
+                                   {"post":self.post.id,
+                                         "text":"updated_comment"},
+                                   fromat = "json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["text"],"updated_comment")
