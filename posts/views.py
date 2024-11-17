@@ -6,12 +6,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from users.models import Profile
-from .models import Post
+from .models import Post, Comment
 from .permissions import CustomReadOnly
-from .serializers import PostSerializer, PostCreateSerializer
+from .serializers import PostSerializer, PostCreateSerializer, CommentSerializer, CommentCreateSerializer
+
 
 class PostViewSet(viewsets.ModelViewSet):
-    queryset = Post.objects.all()
+    queryset = Post.objects.all().order_by('-id') # 내림차순
     permission_classes = [CustomReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['author','likes']
@@ -34,3 +35,16 @@ def like_post(request, id):
     else:
         post.likes.add(request.user)
     return Response(status=status.HTTP_200_OK)
+
+class CommentViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.all().order_by('id') # 오름차순
+    permission_classes = [CustomReadOnly]
+
+    def get_serializer_class(self):
+        if self.action in ["list","retrieve"]:
+            return CommentSerializer
+        return CommentCreateSerializer
+
+    def perform_create(self, serializer):
+        profile = Profile.objects.get(user=self.request.user)
+        serializer.save(author=self.request.user, profile=profile)
