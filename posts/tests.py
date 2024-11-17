@@ -76,3 +76,58 @@ class PostTest(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
         response = self.client.put(f"/posts/{self.post.id}/", data=new_data, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+class LikeTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username = "test_user1",
+            email = "test@test.com",
+            password = "testpassword!"
+        )
+        self.token = Token.objects.create(user=self.user)
+        self.post = Post.objects.create(
+            author = self.user,
+            profile = self.user.profile,
+            title = "test_title",
+            body = "this is body",
+            category = "backend",
+        )
+
+    def test_like_action(self):
+        user2 = User.objects.create_user(
+            username = "test_user2",
+            email = "test2@test.com",
+            password = "test2password!"
+        )
+        token = Token.objects.create(user=user2)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+
+        response = self.client.post(f"/like/{self.post.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.post.refresh_from_db()
+        self.assertIn(user2, self.post.likes.all())
+        self.assertIn(self.post, user2.like_posts.all())
+
+    def test_unlike(self):
+        user2 = User.objects.create_user(
+            username = "test_user2",
+            email = "test2@test.com",
+            password = "test2password!"
+        )
+        token = Token.objects.create(user=user2)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+        # like check
+        self.post.likes.add(user2)
+
+        response = self.client.post(f"/like/{self.post.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.post.refresh_from_db()
+        self.assertNotIn(user2, self.post.likes.all())
+        self.assertNotIn(self.post, user2.like_posts.all())
+
+    def test_like_without_authorization(self):
+        response = self.client.post(f"/like/{self.post.id}/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
