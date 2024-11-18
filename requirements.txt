@@ -1,8 +1,8 @@
-Django<5
-djangorestframework<4
-Pillow<10
-django-admin-thumbnails<0.3
-django-rest-framework-docs<0.2
-drf-yasg<2
-django-cors-headers==4.6
+Django==4.2.16
+django-admin-thumbnails==0.2.9
+django-cors-headers==4.6.0
 django-filter==24.3
+django-rest-framework-docs==0.1.7
+djangorestframework==3.15.2
+drf-yasg==1.21.8
+Pillow>=10.3.0

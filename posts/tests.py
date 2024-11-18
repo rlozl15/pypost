@@ -7,9 +7,6 @@ from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from posts.models import Post, Comment
 
-
-# image = SimpleUploadedFile(name='test_image.jpg', content=open("media/default.png", 'rb').read(), content_type='image/jpeg')
-
 class PostTest(TestCase):
     def setUp(self):
         self.client = APIClient()
